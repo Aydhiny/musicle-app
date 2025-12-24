@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Musicle App",
   description: "Musicle is a detection software which incorporated an AI Agent to detect music styles, BPM, gives realtime tips, etc.",
+  icons: {
+    icon: "/icons8-piano-ios7-32.png",
+  },
 };
 
 export default function RootLayout({

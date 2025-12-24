@@ -1,14 +1,22 @@
-// src/components/ResultsSection.tsx
-import React from "react";
-import { X, Brain, BarChart3, Activity, Target, Sparkles, Award, Mic2, TrendingUp } from "lucide-react";
-import { AnalysisResponse } from "@/types/analysis.types";
+import { Activity, Award, BarChart3, Brain, Mic2, Share2, Sparkles, TrendingUp, X } from "lucide-react";
+import { useState } from "react";
+import { ShareMenu } from "./ShareMenu";
+import { AudioPlayer } from "./AudioPlayer";
+import { WaveformVisualization } from "./WaveformVisualization";
+import { CharacteristicsGrid } from "./CharacteristicsGrid";
+import { ScoreCard } from "./ScoreCard";
+import { ShareService } from "@/services/shareService";
+import { AnalysisResult } from "@/interfaces/AudioInterfaces";
 
 interface ResultsSectionProps {
-  result: AnalysisResponse;
+  result: AnalysisResult;
   onReset: () => void;
 }
 
 export const ResultsSection: React.FC<ResultsSectionProps> = ({ result, onReset }) => {
+  const [copied, setCopied] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
   if (!result.analysis) {
     return (
       <div className="text-center py-20">
@@ -19,41 +27,91 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({ result, onReset 
 
   const { analysis } = result;
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return "from-emerald-900/40 to-green-900/40 border-emerald-500/40 text-emerald-400";
-    if (score >= 6) return "from-amber-900/40 to-yellow-900/40 border-amber-500/40 text-amber-400";
-    return "from-rose-900/40 to-red-900/40 border-rose-500/40 text-rose-400";
+  const handleShare = async () => {
+    const success = await ShareService.copyToClipboard(result.trackId);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
+  const handleDownloadReport = () => {
+    ShareService.downloadReport(result);
+  };
+
+  const overallScore = ((analysis.commercialScore + analysis.productionScore + analysis.viralPotential) / 3).toFixed(1);
+
   return (
-    <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 pb-20 animate-fade-in">
+    <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
             Analysis Complete
           </h2>
-          <p className="text-gray-500">Comprehensive insights powered by machine learning</p>
+          <p className="text-gray-400">Comprehensive insights powered by machine learning</p>
         </div>
-        <button
-          onClick={onReset}
-          className="text-gray-400 hover:text-white flex items-center gap-2 bg-white/5 px-5 py-3 rounded-xl hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all backdrop-blur-sm group"
-        >
-          <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-          New Analysis
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <button
+              onClick={() => setShowShareMenu(!showShareMenu)}
+              className="text-gray-400 hover:text-white flex items-center gap-2 bg-white/5 px-5 py-3 rounded-xl hover:bg-white/10 border border-white/10 hover:border-purple-500/50 transition-all backdrop-blur-sm group"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+
+            <ShareMenu
+              show={showShareMenu}
+              onClose={() => setShowShareMenu(false)}
+              onCopy={handleShare}
+              onDownload={handleDownloadReport}
+              copied={copied}
+            />
+          </div>
+
+          <button
+            onClick={onReset}
+            className="text-gray-400 hover:text-white flex items-center gap-2 bg-white/5 px-5 py-3 rounded-xl hover:bg-white/10 border border-white/10 hover:border-purple-500/50 transition-all backdrop-blur-sm group"
+          >
+            <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+            New Analysis
+          </button>
+        </div>
+      </div>
+
+      {/* Track Info Card */}
+      <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-purple-500/20 rounded-2xl p-6 mb-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/50">
+              <Activity className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white mb-1">{result.fileName}</h3>
+              <p className="text-sm text-gray-400">Uploaded {new Date(result.uploadedAt).toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-400 mb-1">Analysis ID</div>
+            <div className="text-sm font-mono text-gray-500">{result.trackId.substring(0, 8)}...</div>
+          </div>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left Column - Main Analysis */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Audio Player */}
+          {result.audioUrl && <AudioPlayer audioUrl={result.audioUrl} fileName={result.fileName} />}
+
           {/* Genre Classification */}
-          <div className="bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-blue-900/30 border border-purple-500/30 rounded-3xl p-8 backdrop-blur-sm hover:shadow-2xl hover:shadow-purple-500/20 transition-all">
+          <div className="bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-blue-900/30 border border-purple-500/30 rounded-2xl p-8 backdrop-blur-sm hover:shadow-2xl hover:shadow-purple-500/20 transition-all">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Brain className="w-12 h-12 text-purple-400" />
-                  <div className="absolute inset-0 bg-purple-400/30 blur-xl rounded-full"></div>
+                  <div className="absolute inset-0 bg-purple-400/30 blur-xl rounded-full" />
                 </div>
                 <div>
                   <div className="text-sm text-gray-400 mb-1">Genre Classification</div>
@@ -74,44 +132,25 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({ result, onReset 
                 <div
                   className="bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 h-3 rounded-full transition-all duration-1000"
                   style={{ width: `${analysis.confidence}%` }}
-                ></div>
+                />
               </div>
             </div>
+
+            <WaveformVisualization />
           </div>
 
           {/* Audio Characteristics */}
-          <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-purple-500/20 rounded-2xl p-8 backdrop-blur-sm">
             <h3 className="font-bold mb-6 text-sm text-gray-400 flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               AUDIO CHARACTERISTICS
             </h3>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: "Tempo", value: analysis.characteristics.tempo.toFixed(0), unit: "BPM", color: "purple" },
-                { label: "Energy", value: (analysis.characteristics.energy * 100).toFixed(0), unit: "%", color: "pink" },
-                { label: "Danceability", value: (analysis.characteristics.danceability * 100).toFixed(0), unit: "%", color: "blue" },
-                { label: "Valence", value: (analysis.characteristics.valence * 100).toFixed(0), unit: "%", color: "emerald" },
-                { label: "Acousticness", value: (analysis.characteristics.acousticness * 100).toFixed(0), unit: "%", color: "amber" },
-                { label: "Loudness", value: analysis.characteristics.loudness.toFixed(0), unit: "dB", color: "rose" },
-                { label: "Speechiness", value: (analysis.characteristics.speechiness * 100).toFixed(0), unit: "%", color: "cyan" },
-                { label: "Instrumental", value: (analysis.characteristics.instrumentalness * 100).toFixed(0), unit: "%", color: "violet" },
-                { label: "Spectral", value: analysis.characteristics.spectralCentroid.toFixed(0), unit: "Hz", color: "fuchsia" },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="bg-gradient-to-br from-white/5 to-transparent rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all group"
-                >
-                  <div className="text-xs text-gray-500 mb-2">{item.label}</div>
-                  <div className={`text-3xl font-bold text-${item.color}-400 group-hover:scale-110 transition-transform`}>{item.value}</div>
-                  <div className="text-xs text-gray-500 mt-1">{item.unit}</div>
-                </div>
-              ))}
-            </div>
+            <CharacteristicsGrid characteristics={analysis.characteristics} />
           </div>
 
           {/* Strengths */}
           {analysis.strengths && analysis.strengths.length > 0 && (
-            <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-purple-500/20 rounded-2xl p-6 backdrop-blur-sm">
               <h3 className="font-bold mb-5 text-sm text-gray-400 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
                 STRENGTHS
@@ -131,7 +170,7 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({ result, onReset 
 
           {/* Improvements */}
           {analysis.improvements && analysis.improvements.length > 0 && (
-            <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-[#121212] to-[#1a1a2e] border border-purple-500/20 rounded-2xl p-6 backdrop-blur-sm">
               <h3 className="font-bold mb-5 text-sm text-gray-400 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
                 SUGGESTED IMPROVEMENTS
@@ -152,65 +191,39 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({ result, onReset 
 
         {/* Right Column - Scores */}
         <div className="space-y-6">
-          {/* Score Cards */}
           <div className="grid grid-cols-1 gap-4">
-            <div
-              className={`bg-gradient-to-br ${getScoreColor(
-                analysis.commercialScore
-              )} p-6 rounded-2xl border backdrop-blur-sm hover:scale-105 transition-all`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Award className="w-5 h-5" />
-                <div className="text-xs font-semibold">Commercial Potential</div>
-              </div>
-              <div className="text-5xl font-bold mb-1">{analysis.commercialScore}/10</div>
-              <div className="text-xs opacity-80">Mainstream Appeal</div>
-            </div>
+            <ScoreCard
+              icon={<Award className="w-5 h-5" />}
+              title="Commercial Potential"
+              score={analysis.commercialScore}
+              subtitle="Mainstream Appeal"
+            />
+            <ScoreCard
+              icon={<Mic2 className="w-5 h-5" />}
+              title="Production Quality"
+              score={analysis.productionScore}
+              subtitle="Mix & Mastering"
+            />
+            <ScoreCard
+              icon={<TrendingUp className="w-5 h-5" />}
+              title="Viral Potential"
+              score={analysis.viralPotential}
+              subtitle="Social Media Ready"
+            />
+          </div>
 
-            <div
-              className={`bg-gradient-to-br ${getScoreColor(
-                analysis.productionScore
-              )} p-6 rounded-2xl border backdrop-blur-sm hover:scale-105 transition-all`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Mic2 className="w-5 h-5" />
-                <div className="text-xs font-semibold">Production Quality</div>
+          {/* Overall Score */}
+          <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-2xl p-6 border border-purple-500/30 shadow-lg shadow-purple-500/20">
+            <div className="text-center">
+              <div className="text-xs text-gray-400 mb-2">OVERALL SCORE</div>
+              <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                {overallScore}
               </div>
-              <div className="text-5xl font-bold mb-1">{analysis.productionScore}/10</div>
-              <div className="text-xs opacity-80">Mix & Mastering</div>
-            </div>
-
-            <div
-              className={`bg-gradient-to-br ${getScoreColor(
-                analysis.viralPotential
-              )} p-6 rounded-2xl border backdrop-blur-sm hover:scale-105 transition-all`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <TrendingUp className="w-5 h-5" />
-                <div className="text-xs font-semibold">Viral Potential</div>
-              </div>
-              <div className="text-5xl font-bold mb-1">{analysis.viralPotential}/10</div>
-              <div className="text-xs opacity-80">Social Media Ready</div>
+              <div className="text-xs text-gray-400">Out of 10</div>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
