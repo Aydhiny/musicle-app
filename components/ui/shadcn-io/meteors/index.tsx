@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { cn } from "~/lib/utils"
+import type React from "react";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface MeteorsProps {
-  number?: number
-  minDelay?: number
-  maxDelay?: number
-  minDuration?: number
-  maxDuration?: number
-  angle?: number
-  className?: string
+  number?: number;
+  minDelay?: number;
+  maxDelay?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  angle?: number;
+  className?: string;
 }
 
 export const Meteors = ({
@@ -23,7 +23,7 @@ export const Meteors = ({
   angle = 215,
   className,
 }: MeteorsProps) => {
-  const [meteorStyles, setMeteorStyles] = useState<React.CSSProperties[]>([])
+  const [meteorStyles, setMeteorStyles] = useState<React.CSSProperties[]>([]);
 
   useEffect(() => {
     const styles = [...new Array(number)].map(() => ({
@@ -32,9 +32,9 @@ export const Meteors = ({
       left: `calc(0% + ${Math.floor(Math.random() * window.innerWidth)}px)`,
       animationDelay: `${Math.random() * (maxDelay - minDelay) + minDelay}s`,
       animationDuration: `${Math.floor(Math.random() * (maxDuration - minDuration) + minDuration)}s`,
-    }))
-    setMeteorStyles(styles)
-  }, [number, minDelay, maxDelay, minDuration, maxDuration, angle])
+    }));
+    setMeteorStyles(styles);
+  }, [number, minDelay, maxDelay, minDuration, maxDuration, angle]);
 
   return (
     <>
@@ -53,5 +53,5 @@ export const Meteors = ({
         </span>
       ))}
     </>
-  )
-}
+  );
+};
